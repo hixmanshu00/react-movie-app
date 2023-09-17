@@ -1,63 +1,79 @@
-import { data } from '../data';
+import React from 'react';
+import { connect } from 'react-redux';
 import Navbar from './Navbar';
 import MovieCard from './MovieCard';
-import React from 'react';
-import { addMovies, setShowFavourite } from '../actions';
+import { addMovies, setShowFavourites } from '../actions';
+import { data as moviesList } from '../data';
 
 class App extends React.Component {
-
   componentDidMount() {
-    const { store } = this.props;
-    store.subscribe(() => {
-      this.forceUpdate();
-    });
-    store.dispatch(addMovies(data));
-    // console.log(this.props.store.getState())
+    this.props.dispatch(addMovies(moviesList));
   }
 
-  isMovieFavourite = (movie) => {
-    const { movies } = this.props.store.getState();
+  isMovieInFavourites = (movie) => {
+    const { movies } = this.props;
+
     const index = movies.favourites.indexOf(movie);
     if (index !== -1) {
       return true;
     }
+
     return false;
   };
 
-  onChangeTab = (val) => {
-    this.props.store.dispatch(setShowFavourite(val))
-  }
-
+  changeTab = (val) => {
+    this.props.dispatch(setShowFavourites(val));
+  };
   render() {
-    // console.log(this.props.store.getState());
-    const {movies} = this.props.store.getState();
-    const { list, favourites, showFavourites } = movies;
-    console.log(showFavourites)
+    const { movies, search } = this.props; // will return { movies: {}, search: []}
+    console.log('movies', movies);
+    const { list, showFavourites = [], favourites = [] } = movies;
     const displayMovies = showFavourites ? favourites : list;
+
     return (
       <div className="App">
-        <Navbar />
+        <Navbar search={search} />
         <div className="main">
           <div className="tabs">
-            <div className={`tab ${showFavourites ? '' : 'active-tabs'}`}  onClick={() => this.onChangeTab(false)}>Movies</div>
-            <div className={`tab ${showFavourites ? 'active-tabs' : ''}`} onClick={() => this.onChangeTab(true)}>Favourites</div>
+            <div
+              className={`tab ${showFavourites ? '' : 'active-tabs'}`}
+              onClick={() => this.changeTab(false)}
+            >
+              Movies
+            </div>
+            <div
+              className={`tab ${showFavourites ? 'active-tabs' : ''}`}
+              onClick={() => this.changeTab(true)}
+            >
+              Favourites
+            </div>
           </div>
 
-          <div className="lists">
-            {displayMovies.map((movie, index) => (
+          <div id="list">
+            {displayMovies.map((movie) => (
               <MovieCard
                 movie={movie}
-                key={`movies-${index}`}
-                dispatch={this.props.store.dispatch}
-                isMovieFavourite = {this.isMovieFavourite(movie)}
+                key={movie.imdbID}
+                dispatch={this.props.dispatch}
+                isFavourite={this.isMovieInFavourites(movie)}
               />
             ))}
+            {displayMovies.length === 0 ? (
+              <div className="no-movies">No movies to display! </div>
+            ) : null}
           </div>
-          {displayMovies.length === 0 ? <div className='no-movies'>No movies to display</div> : null}
         </div>
       </div>
     );
   }
 }
 
-export default App;
+
+function callback(state) {
+  return {
+    movies: state.movies,
+    search: state.movies,
+  };
+}
+const connectedComponent = connect(callback)(App);
+export default connectedComponent;
